@@ -6,6 +6,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from datetime import datetime
+from PIL import Image
+import io
+import base64
+from fpdf import FPDF
+import tempfile
 
 # Set page config
 st.set_page_config(page_title="Lung Cancer Prediction App", layout="wide")
@@ -20,10 +26,10 @@ class_names = ['Adenocarcinoma', 'Large cell carcinoma', 'Normal', 'Squamous cel
 
 # Function to preprocess the image
 def preprocess_image(img):
-    img = image.img_to_array(img)
-    img = np.expand_dims(img, axis=0)
-    img = img / 255.0  # Normalize the image
-    return img
+    img = img.resize((224, 224))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array / 255.0
 
 # Function to make prediction
 def predict(image):
@@ -67,50 +73,204 @@ def display_cancer_info(cancer_type):
         - Important for early detection and comparison
         """
     }
-    st.sidebar.write(info[cancer_type])
+    return info[cancer_type]
+
+# Function to process multiple images
+def process_multiple_images(uploaded_files):
+    results = []
+    for file in uploaded_files:
+        img = Image.open(file)
+        predictions = predict(img)
+        results.append({
+            'filename': file.name,
+            'predictions': predictions,
+            'predicted_class': class_names[np.argmax(predictions)],
+            'image': img
+        })
+    return results
+
+# Function to compare two images
+def compare_images(image1, image2):
+    pred1 = predict(image1)
+    pred2 = predict(image2)
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+    
+    ax1.imshow(image1)
+    ax1.set_title(f"Predicted: {class_names[np.argmax(pred1)]}")
+    ax1.axis('off')
+    
+    ax2.imshow(image2)
+    ax2.set_title(f"Predicted: {class_names[np.argmax(pred2)]}")
+    ax2.axis('off')
+    
+    plt.tight_layout()
+    return fig, pred1, pred2
+
+# Function to generate PDF report
+def generate_pdf_report(results):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Title
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Lung Cancer Prediction Report", ln=True, align="C")
+    pdf.ln(10)
+    
+    for result in results:
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, f"Analysis for {result['filename']}", ln=True)
+        pdf.ln(5)
+        
+        # Save image to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
+            result['image'].save(tmpfile, format="PNG")
+            pdf.image(tmpfile.name, x=10, w=100)
+        
+        pdf.set_font("Arial", "", 12)
+        pdf.cell(0, 10, f"Predicted Class: {result['predicted_class']}", ln=True)
+        pdf.ln(5)
+        
+        pdf.cell(0, 10, "Confidence Scores:", ln=True)
+        for class_name, confidence in zip(class_names, result['predictions']):
+            pdf.cell(0, 10, f"{class_name}: {confidence:.2%}", ln=True)
+        
+        pdf.ln(10)
+        
+        # Add cancer type information
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, f"Information about {result['predicted_class']}", ln=True)
+        pdf.ln(5)
+        pdf.set_font("Arial", "", 12)
+        info = display_cancer_info(result['predicted_class'])
+        pdf.multi_cell(0, 10, info)
+        
+        pdf.ln(10)
+    
+    # Save to a temporary file and read the contents
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+        pdf.output(tmpfile.name)
+        with open(tmpfile.name, "rb") as f:
+            return f.read()
+
+# Simulated database for the community forum
+forum_posts = [
+    {"id": 1, "user": "JohnDoe", "title": "My experience with the app", "content": "I found this app very helpful in understanding my CT scan results.", "replies": []},
+    {"id": 2, "user": "JaneSmith", "title": "Question about accuracy", "content": "How accurate is the prediction model?", "replies": [
+        {"user": "Admin", "content": "Our model has been trained on a large dataset and achieves over 90% accuracy on test data. However, it's always important to consult with a healthcare professional."}
+    ]},
+]
 
 # Main function
 def main():
     st.title("Lung Cancer Prediction from CT Scan Images")
-    st.write("Upload a Chest CT Scan image to predict the type of lung cancer.")
+    
+    # Navigation
+    page = st.sidebar.selectbox("Navigate", ["Home", "Community Forum"])
+    
+    if page == "Home":
+        home_page()
+    elif page == "Community Forum":
+        community_forum()
 
-    # File uploader
-    uploaded_file = st.file_uploader("Choose a CT Scan image...", type=["jpg", "png", "jpeg"])
+def home_page():
+    st.write("Upload one or multiple Chest CT Scan images to predict the type of lung cancer.")
 
-    if uploaded_file is not None:
-        # Display the uploaded image
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(uploaded_file, caption="Uploaded CT Scan", use_column_width=True)
+    # File uploader for multiple files
+    uploaded_files = st.file_uploader("Choose CT Scan image(s)...", type=["jpg", "png", "jpeg"], accept_multiple_files=True)
 
-        # Preprocess the image and make prediction
-        img = image.load_img(uploaded_file, target_size=(224, 224))
-        predictions = predict(img)
-
-        # Display prediction results
-        with col2:
-            st.subheader("Prediction Results")
-            predicted_class = class_names[np.argmax(predictions)]
-            st.write(f"Predicted Class: **{predicted_class}**")
-            st.write("Confidence Scores:")
-            for class_name, confidence in zip(class_names, predictions):
-                st.write(f"{class_name}: {confidence:.2%}")
+    if uploaded_files:
+        results = process_multiple_images(uploaded_files)
+        
+        st.subheader("Analysis Results")
+        for result in results:
+            st.write(f"**File:** {result['filename']}")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.image(result['image'], caption=f"Uploaded CT Scan: {result['filename']}", use_column_width=True)
+            with col2:
+                st.write(f"Predicted Class: **{result['predicted_class']}**")
+                st.write("Confidence Scores:")
+                for class_name, confidence in zip(class_names, result['predictions']):
+                    st.write(f"{class_name}: {confidence:.2%}")
+                fig = plot_confidence_scores(result['predictions'])
+                st.pyplot(fig)
+        
+        # Comparative Analysis
+        if len(results) >= 2:
+            st.subheader("Comparative Analysis")
+            st.write("Select two images to compare:")
+            image1 = st.selectbox("Select first image:", [r['filename'] for r in results], key='image1')
+            image2 = st.selectbox("Select second image:", [r['filename'] for r in results], key='image2')
             
-            # Plot confidence scores
-            fig = plot_confidence_scores(predictions)
-            st.pyplot(fig)
+            if image1 != image2:
+                img1 = next(r['image'] for r in results if r['filename'] == image1)
+                img2 = next(r['image'] for r in results if r['filename'] == image2)
+                comp_fig, pred1, pred2 = compare_images(img1, img2)
+                st.pyplot(comp_fig)
+                
+                st.write("Prediction Comparison:")
+                for class_name, conf1, conf2 in zip(class_names, pred1, pred2):
+                    st.write(f"{class_name}: {conf1:.2%} vs {conf2:.2%}")
+                
+                if np.argmax(pred1) != np.argmax(pred2):
+                    st.warning("The predictions for these two images differ. Please consult with a healthcare professional for a thorough evaluation.")
+                else:
+                    st.success("The predictions for these two images are consistent.")
+            else:
+                st.warning("Please select two different images for comparison.")
+        
+        # Generate PDF report
+        pdf_report = generate_pdf_report(results)
+        st.download_button(
+            label="Download PDF Report",
+            data=pdf_report,
+            file_name="lung_cancer_prediction_report.pdf",
+            mime="application/pdf"
+        )
 
         # User feedback
         st.subheader("Provide Feedback")
-        feedback = st.radio("Was this prediction correct?", ("Yes", "No", "Unsure"))
+        feedback = st.radio("Were these predictions helpful?", ("Yes", "No", "Unsure"))
         if st.button("Submit Feedback"):
-            # Here you would typically save this feedback to a database
             st.success("Thank you for your feedback! It will help us improve our model.")
 
     # Educational section
     st.sidebar.title("Learn About Lung Cancer Types")
     cancer_type = st.sidebar.selectbox("Select a cancer type to learn more:", class_names)
-    display_cancer_info(cancer_type)
+    st.sidebar.write(display_cancer_info(cancer_type))
+
+def community_forum():
+    st.title("Community Forum")
+    
+    # Display existing posts
+    for post in forum_posts:
+        st.subheader(post['title'])
+        st.write(f"Posted by: {post['user']}")
+        st.write(post['content'])
+        st.write("Replies:")
+        for reply in post['replies']:
+            st.text(f"{reply['user']}: {reply['content']}")
+        
+        # Add reply
+        reply = st.text_input(f"Reply to '{post['title']}'")
+        if st.button(f"Submit Reply to '{post['title']}'"):
+            post['replies'].append({"user": "Anonymous", "content": reply})
+            st.success("Reply posted successfully!")
+    
+    # Create new post
+    st.subheader("Create a New Post")
+    new_post_title = st.text_input("Post Title")
+    new_post_content = st.text_area("Post Content")
+    if st.button("Submit New Post"):
+        forum_posts.append({
+            "id": len(forum_posts) + 1,
+            "user": "Anonymous",
+            "title": new_post_title,
+            "content": new_post_content,
+            "replies": []
+        })
+        st.success("New post created successfully!")
 
     # Footer
     st.markdown("""

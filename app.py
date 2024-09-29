@@ -153,25 +153,16 @@ def generate_pdf_report(results):
         with open(tmpfile.name, "rb") as f:
             return f.read()
 
-# Simulated database for the community forum
-forum_posts = [
-    {"id": 1, "user": "JohnDoe", "title": "My experience with the app", "content": "I found this app very helpful in understanding my CT scan results.", "replies": []},
-    {"id": 2, "user": "JaneSmith", "title": "Question about accuracy", "content": "How accurate is the prediction model?", "replies": [
-        {"user": "Admin", "content": "Our model has been trained on a large dataset and achieves over 90% accuracy on test data. However, it's always important to consult with a healthcare professional."}
-    ]},
-]
 
 # Main function
 def main():
     st.title("Lung Cancer Prediction from CT Scan Images")
     
     # Navigation
-    page = st.sidebar.selectbox("Navigate", ["Home", "Community Forum"])
+    page = st.sidebar.selectbox("Navigate", ["Home"])
     
     if page == "Home":
         home_page()
-    elif page == "Community Forum":
-        community_forum()
 
 def home_page():
     st.write("Upload one or multiple Chest CT Scan images to predict the type of lung cancer.")
@@ -229,48 +220,10 @@ def home_page():
             mime="application/pdf"
         )
 
-        # User feedback
-        st.subheader("Provide Feedback")
-        feedback = st.radio("Were these predictions helpful?", ("Yes", "No", "Unsure"))
-        if st.button("Submit Feedback"):
-            st.success("Thank you for your feedback! It will help us improve our model.")
-
     # Educational section
     st.sidebar.title("Learn About Lung Cancer Types")
     cancer_type = st.sidebar.selectbox("Select a cancer type to learn more:", class_names)
     st.sidebar.write(display_cancer_info(cancer_type))
-
-def community_forum():
-    st.title("Community Forum")
-    
-    # Display existing posts
-    for post in forum_posts:
-        st.subheader(post['title'])
-        st.write(f"Posted by: {post['user']}")
-        st.write(post['content'])
-        st.write("Replies:")
-        for reply in post['replies']:
-            st.text(f"{reply['user']}: {reply['content']}")
-        
-        # Add reply
-        reply = st.text_input(f"Reply to '{post['title']}'")
-        if st.button(f"Submit Reply to '{post['title']}'"):
-            post['replies'].append({"user": "Anonymous", "content": reply})
-            st.success("Reply posted successfully!")
-    
-    # Create new post
-    st.subheader("Create a New Post")
-    new_post_title = st.text_input("Post Title")
-    new_post_content = st.text_area("Post Content")
-    if st.button("Submit New Post"):
-        forum_posts.append({
-            "id": len(forum_posts) + 1,
-            "user": "Anonymous",
-            "title": new_post_title,
-            "content": new_post_content,
-            "replies": []
-        })
-        st.success("New post created successfully!")
 
     # Footer
     st.markdown("""

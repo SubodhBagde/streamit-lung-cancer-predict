@@ -78,9 +78,12 @@ The application has been containerized using Docker to make it easier to deploy 
 
 ### Model Details
 * Model Architecture: MobileNet
-* Dataset: The dataset consists of 4183 CT-scan images classified into 4 categories: Adenocarcinoma, Large Cell Carcinoma, Squamous Cell Carcinoma, and Normal. It has been split into training, testing, and 
+* Dataset: The dataset consists of 1000 CT-scan images classified into 4 categories: Adenocarcinoma, Large Cell Carcinoma, Squamous Cell Carcinoma, and Normal. It has been split into training, testing, and 
   validation sets.
 * Model File: `chest_cancer_model_fine_tuned.h5`
+
+## License
+This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Contributing
 Feel free to open a pull request if you'd like to contribute. Any feedback or suggestions are welcome!

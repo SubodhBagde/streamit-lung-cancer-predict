@@ -2,6 +2,8 @@
 
 This project is a machine learning web application built using Streamlit to predict lung adenocarcinoma disease based on Chest CT-Scan images. The model classifies the input into one of four categories: Adenocarcinoma, Large Cell Carcinoma, Squamous Cell Carcinoma, or Normal.
 
+[You can visit the live app here!](https://app-lung-cancer-predict.streamlit.app/)
+
 The application has been containerized using Docker to make it easier to deploy and run across different environments.
 
 ## Project Overview

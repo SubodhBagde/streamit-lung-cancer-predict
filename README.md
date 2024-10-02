@@ -83,7 +83,7 @@ The application has been containerized using Docker to make it easier to deploy 
 * Model File: `chest_cancer_model_fine_tuned.h5`
 
 ## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ## Contributing
 Feel free to open a pull request if you'd like to contribute. Any feedback or suggestions are welcome!

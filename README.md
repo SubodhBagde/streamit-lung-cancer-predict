@@ -4,6 +4,8 @@ This project is a machine learning web application built using Streamlit to pred
 
 [You can visit the live app here!](https://app-lung-cancer-predict.streamlit.app/)
 
+[Also Checkout this medium blog about this project!](https://medium.com/@subodhbagde2017/containerizing-a-streamlit-app-with-docker-b4f0b05cc132)
+
 The application has been containerized using Docker to make it easier to deploy and run across different environments.
 
 ## Project Overview
